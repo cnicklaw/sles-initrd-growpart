@@ -1,8 +1,12 @@
 #!/bin/bash
 #%stage: device
 
+# Based on original work of Robert Plestenjak, robert.plestenjak@xlab.si
+# Redesigned for SLES initrd, 2013 Alexander von Gluck IV
+#
 # Grows the root partition to fill the disk
 # when used in an OpenStack or cloud environment
+#
 
 # This doesn't work with UUID's or filesystem names and could be improved
 root_part=$(grep -oe "root=/dev/\S*" /proc/cmdline | sed 's/root=//')

@@ -1,9 +1,9 @@
 #!/bin/bash
-# Modifies the initrd to resize the root partition to the whole disk
-# 2013, Alexander von Gluck IV
+# Modifies the initrd to resize the root partition to the whole disk at boot
+# This enables dynamic root disks in OpenStack and SUSE Cloud
 #
-# Original idea by Robert Plestenjak, robert.plestenjak@xlab.si
-# Redesigned for SLES
+# Based on original work of Robert Plestenjak, robert.plestenjak@xlab.si
+# Redesigned for SLES, 2013 Alexander von Gluck IV
 #
 # depends:
 #   cloud-init from SUSE-Cloud repo and chkconfig cloud-init on
