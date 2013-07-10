@@ -448,15 +448,6 @@ verify_ptupdate() {
 	fi
 
 	if [ -z "$found" ]; then
-		kver=$(uname -r) || debug 1 "uname -r failed!"
-
-		if ! kver_cmp "${kver-0.0.0}" -ge 3.8.0; then
-			reason="Kernel '$kver' < 3.8.0."
-			found="off"
-		fi
-	fi
-
-	if [ -z "$found" ]; then
 		_RET="true"
 		return 0
 	fi

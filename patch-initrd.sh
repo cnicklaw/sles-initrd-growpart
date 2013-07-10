@@ -27,23 +27,22 @@ function modify-initrd () {
 	echo "--- copying tools and dependencies ..."
 	cp -v ${install_dir}/51-growpart.sh boot/
 	cp -v ${install_dir}/growpart sbin/
-	cp -v /sbin/sfdisk sbin/
-	cp -v /usr/bin/awk bin/
-	cp -v /usr/bin/readlink bin/
-	cp -v /sbin/e2fsck sbin/
-	cp -v /sbin/resize2fs sbin/
-	cp -v /usr/bin/partprobe bin/
-	deps "($(ldd sbin/sfdisk))"
+	cp -v $(which awk) bin/
+	cp -v $(which readlink) bin/
+	cp -v $(which sfdisk) sbin/
+	cp -v $(which e2fsck) sbin/
+	cp -v $(which resize2fs) sbin/
+	cp -v $(which partprobe) sbin/
 	deps "($(ldd bin/awk))"
 	deps "($(ldd bin/readlink))"
+	deps "($(ldd sbin/sfdisk))"
 	deps "($(ldd sbin/e2fsck))"
 	deps "($(ldd sbin/resize2fs))"
-	deps "($(ldd bin/partprobe))"
+	deps "($(ldd sbin/partprobe))"
 	echo "--- adding initrd task to resize '/'"
 	chmod 755 boot/51-growpart.sh
-	mv run_all.sh run_all.sh.old
-	sed '/preping 81-resume.userspace.sh/i\
-[ "$debug" ] && echo running 51-growpart.sh\nsource boot/51-growpart.sh' run_all.sh.old > run_all.sh
+	sed -i '/preping 81-resume.userspace.sh/i\
+[ "$debug" ] && echo running 51-growpart.sh\nsource boot/51-growpart.sh' run_all.sh
 	echo "--- done"
 }
 
@@ -62,7 +61,7 @@ root_dev=$(cat /etc/fstab |grep "\/dev\/.*\/ .*" |awk '{print $1}')
 
 # create install dir and copy scripts
 [ ! -d ${install_dir} ] && mkdir -p ${install_dir}
-cp growpart sles-initrd-growpart.sh 51-growpart.sh ${install_dir}/
+cp growpart patch-initrd.sh 51-growpart.sh ${install_dir}/
 
 # create backup of important files
 echo "- backing up menu.lst >> ${install_dir}/menu.lst.$(date +%Y%m%d-%H%M)"
