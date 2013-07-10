@@ -3,26 +3,18 @@
 # 2013, Alexander von Gluck IV
 #
 # Original idea by Robert Plestenjak, robert.plestenjak@xlab.si
-# Redesigned for SUSE
+# Redesigned for SLES
 #
 # depends:
-# cloud-init from SUSE-Cloud repo (SLES)
+#   cloud-init from SUSE-Cloud repo and chkconfig cloud-init on
 #
 # what it does:
-# - installs itself in '/usr/libexec/suse-image-mod' directory, change
+# - installs itself in '/usr/libexec/sles-initrd-growpart' directory, change
 #   '${install_dir}' to change install path
 # - automatic partition resize and filesystem increase of root partition
 #   during boot
 #
-install_dir=/usr/libexec/suse-image-mod
-growpart_bin=$(which growpart)
-if [ $? -gt 0 ]; then
-	# exit if no growpart tool
-	echo "Growpart tool not found in path!!"
-	echo "Get growpart at https://launchpad.net/cloud-utils"
-	exit 1
-fi
-#
+install_dir=/usr/libexec/sles-initrd-growpart
 
 function deps () {
 	for file in ${@}; do
@@ -34,17 +26,19 @@ function deps () {
 function modify-initrd () {
 	echo "--- copying tools and dependencies ..."
 	cp -v ${install_dir}/51-growpart.sh boot/
-	cp -v ${growpart_bin} sbin/
+	cp -v ${install_dir}/growpart sbin/
 	cp -v /sbin/sfdisk sbin/
 	cp -v /usr/bin/awk bin/
 	cp -v /usr/bin/readlink bin/
 	cp -v /sbin/e2fsck sbin/
 	cp -v /sbin/resize2fs sbin/
+	cp -v /usr/bin/partprobe bin/
 	deps "($(ldd sbin/sfdisk))"
 	deps "($(ldd bin/awk))"
 	deps "($(ldd bin/readlink))"
 	deps "($(ldd sbin/e2fsck))"
 	deps "($(ldd sbin/resize2fs))"
+	deps "($(ldd bin/partprobe))"
 	echo "--- adding initrd task to resize '/'"
 	chmod 755 boot/51-growpart.sh
 	mv run_all.sh run_all.sh.old
@@ -66,9 +60,9 @@ echo "Starting SUSE initrd modification process ..."
 kernel_version=$(uname -r)
 root_dev=$(cat /etc/fstab |grep "\/dev\/.*\/ .*" |awk '{print $1}')
 
-# create suse-mod dir and copy scripts
+# create install dir and copy scripts
 [ ! -d ${install_dir} ] && mkdir -p ${install_dir}
-cp suse-image-mod.sh 51-growpart.sh ${install_dir}/
+cp growpart sles-initrd-growpart.sh 51-growpart.sh ${install_dir}/
 
 # create backup of important files
 echo "- backing up menu.lst >> ${install_dir}/menu.lst.$(date +%Y%m%d-%H%M)"
@@ -126,6 +120,4 @@ rm -rf /tmp/initrd-${kernel_version}
 rm -f /tmp/initrd.cpio
 rm -f /tmp/root_part.tmp
 
-echo
-echo "Reboot, choose 'title SLE 11 mod ${kernel_version}' in grub"
-echo
+echo "+ Complete, please reboot"
