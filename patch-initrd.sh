@@ -53,7 +53,7 @@ if [ "$USER" != "root" ]; then
 fi
 
 
-echo "Starting SUSE initrd modification process ..."
+echo "Starting SLES initrd modification process ..."
 
 # collect system and partitions info
 kernel_version=$(uname -r)
@@ -68,7 +68,7 @@ echo "- backing up menu.lst >> ${install_dir}/menu.lst.$(date +%Y%m%d-%H%M)"
 cp /boot/grub/menu.lst ${install_dir}/menu.lst.$(date +%Y%m%d-%H%M)
 
 # prepare initamfs copy
-echo -n "- extracting initrd /boot/initramfs-${kernel_version}, size: "
+echo -n "- extracting initrd /boot/initrd-${kernel_version}, size: "
 [ "$(uname -m)" == "x86_64" ] && \
 	lib=lib64 || \
 	lib=lib
@@ -79,17 +79,17 @@ cd /tmp/initrd-${kernel_version}
 gunzip -c /boot/initrd-${kernel_version} | cpio -i --make-directories
 
 # modify initrd
-echo "- modify initrd copy /tmp/initramfs-${kernel_version}"
+echo "- modify initrd copy /tmp/initrd-${kernel_version}"
 modify-initrd
 
-# remove existing initramf mods
+# remove existing initrd grow images
 echo "- removing all previous mod setups"
-rm -fv /boot/initrd-mod-*
+rm -fv /boot/initrd-grow-*
 
 # create new initrd
-echo -n "- new initrams /boot/initrd-mod-${kernel_version}, size: "
+echo -n "- new initrd /boot/initrd-grow-${kernel_version}, size: "
 find ./ | cpio -H newc -o > /tmp/initrd.cpio
-gzip -c /tmp/initrd.cpio > /boot/initrd-mod-${kernel_version}
+gzip -c /tmp/initrd.cpio > /boot/initrd-grow-${kernel_version}
 
 # set grub root
 root_grub=$(cat /boot/grub/menu.lst |grep -v "^#" |grep -m1 -o "root (hd[0-9],[0-9])")
@@ -99,10 +99,10 @@ echo "- setting up menu.lst"
 grub_entry_title="title SUSE Linux Enterprise GrowPart ${kernel_version}"
 grub_entry_root="	${root_grub}"
 grub_entry_kernel="	kernel /boot/vmlinuz-${kernel_version} root=${root_dev} splash=silent crashkernel=256M-:128M showopts vga=0x314"
-grub_entry_initrd="	initrd /boot/initrd-mod-${kernel_version}"
+grub_entry_initrd="	initrd /boot/initrd-grow-${kernel_version}"
 # remove existing entry
 grub_entry_start="title SUSE Linux Enterprise GrowPart ${kernel_version}"
-grub_entry_end="\tinitrd \/boot\/initrd-mod-${kernel_version}"
+grub_entry_end="\tinitrd \/boot\/initrd-grow-${kernel_version}"
 sed -i "/${grub_entry_start}/,/${grub_entry_end}/d" /boot/grub/menu.lst
 # insert new entry
 echo "${grub_entry_title}" >> /boot/grub/menu.lst
@@ -110,7 +110,7 @@ echo "${grub_entry_root}" >> /boot/grub/menu.lst
 echo "${grub_entry_kernel}" >> /boot/grub/menu.lst
 echo "${grub_entry_initrd}" >> /boot/grub/menu.lst
 
-# ensure default is new entry
+# ensure default is new entry (TODO: check index)
 sed -i 's/^default 0/default 3/g' /boot/grub/menu.lst
 
 # cleanup
@@ -119,4 +119,5 @@ rm -rf /tmp/initrd-${kernel_version}
 rm -f /tmp/initrd.cpio
 rm -f /tmp/root_part.tmp
 
-echo "+ Complete, please reboot"
+echo "+ Done. The next system reboot will resize the root filesystem if needed"
+echo "  Please remember to chkconfig cloud-init on!"
