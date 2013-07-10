@@ -16,7 +16,12 @@
 #
 install_dir=/usr/libexec/suse-image-mod
 growpart_bin=$(which growpart)
-#
+if [ $? -gt 0 ]; then
+	# exit if no growpart tool
+	echo "Growpart tool not found in path!!"
+	echo "Get growpart at https://launchpad.net/cloud-utils"
+	exit 1
+fi
 #
 
 function deps () {
@@ -54,12 +59,6 @@ if [ "$USER" != "root" ]; then
 	exit 1
 fi
 
-# exit if no growpart tool
-if [ ! -f ${growpart_bin} ]; then
-	echo "Growpart tool not found in path!!"
-	echo "Get growpart at https://launchpad.net/cloud-utils"
-	exit 1
-fi
 
 echo "Starting SUSE initrd modification process ..."
 
@@ -104,12 +103,12 @@ root_grub=$(cat /boot/grub/menu.lst |grep -v "^#" |grep -m1 -o "root (hd[0-9],[0
 
 # modify grub menu
 echo "- setting up menu.lst"
-grub_entry_title="title SLE 11 mod ${kernel_version}"
+grub_entry_title="title SUSE Linux Enterprise GrowPart ${kernel_version}"
 grub_entry_root="	${root_grub}"
 grub_entry_kernel="	kernel /boot/vmlinuz-${kernel_version} root=${root_dev} splash=silent crashkernel=256M-:128M showopts vga=0x314"
 grub_entry_initrd="	initrd /boot/initrd-mod-${kernel_version}"
-# remove existing production entry
-grub_entry_start="title SLE 11 mod ${kernel_version}"
+# remove existing entry
+grub_entry_start="title SUSE Linux Enterprise GrowPart ${kernel_version}"
 grub_entry_end="\tinitrd \/boot\/initrd-mod-${kernel_version}"
 sed -i "/${grub_entry_start}/,/${grub_entry_end}/d" /boot/grub/menu.lst
 # insert new entry
@@ -118,11 +117,14 @@ echo "${grub_entry_root}" >> /boot/grub/menu.lst
 echo "${grub_entry_kernel}" >> /boot/grub/menu.lst
 echo "${grub_entry_initrd}" >> /boot/grub/menu.lst
 
+# ensure default is new entry
+sed -i 's/^default 0/default 3/g' /boot/grub/menu.lst
+
 # cleanup
-#echo "- clean up"
-#rm -rf /tmp/initrd-${kernel_version}
-#rm -f /tmp/initrd.cpio
-#rm -f /tmp/root_part.tmp
+echo "- clean up"
+rm -rf /tmp/initrd-${kernel_version}
+rm -f /tmp/initrd.cpio
+rm -f /tmp/root_part.tmp
 
 echo
 echo "Reboot, choose 'title SLE 11 mod ${kernel_version}' in grub"
